@@ -53,11 +53,25 @@ nickname       Pumpkin Helmet
 
 ```
 
-System locale
+Session Info
 
 ```
-> Sys.getlocale()
+> sessionInfo()
+R version 3.1.2 (2014-10-31)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
 
-[1] "LC_COLLATE=Estonian_Estonia.1257;LC_CTYPE=Estonian_Estonia.1257;LC_MONETARY=Estonian_Estonia.1257;LC_NUMERIC=C;LC_TIME=Estonian_Estonia.1257"
+locale:
+[1] LC_COLLATE=Estonian_Estonia.1257  LC_CTYPE=Estonian_Estonia.1257   
+[3] LC_MONETARY=Estonian_Estonia.1257 LC_NUMERIC=C                     
+[5] LC_TIME=Estonian_Estonia.1257    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] plyr_1.8.1 LaF_0.6.1 
+
+loaded via a namespace (and not attached):
+[1] digest_0.6.8    htmltools_0.2.6 Rcpp_0.11.3     rmarkdown_0.4.2 tools_3.1.2     yaml_2.1.13    
 
 ```

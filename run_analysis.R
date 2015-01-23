@@ -5,7 +5,7 @@
 #
 
 
-runAnalysis <- function(path = ".") {
+runAnalysis <- function(path = ".", operation="", outputfile=NULL) {
           
   #===========================================================================
   # function checks for existance of raw data files
@@ -25,8 +25,9 @@ runAnalysis <- function(path = ".") {
       if (!file.exists(paste(path, x, sep = "/"))) F else T; });
     
     if (sum(check) < 8) {
-        df <- data.frame(file=files, found=check, row.names = NULL)        
-        print(df)
+        df <- data.frame(file=files, found=check, row.names = NULL)
+        df[, 1] <- paste(getwd(), df[, 1], sep="/")
+        print(df)        
         stop("Some or all required raw data files above not found.")
         return(F);
     }
@@ -55,16 +56,85 @@ runAnalysis <- function(path = ".") {
     x <- gsub("Acc\\.", "linear.acceleration.", x)
     x <- gsub("Gyro\\.", "angular.velocity.", x)
     x <- tolower(x)
+    x <- gsub("$", ".avg", x)
   }
+  
+  #===========================================================================  
+  # Function writes codebook descriptions 
+  #===========================================================================
+  writeCodeBook <- function(filename = "CodeBook.Rmd") {
+    df <- data.frame(feature.improvednames, stringsAsFactors = FALSE);
+    df[,c("Desc")] <- df[, 1];
+    
+    df[,c("Desc")]  <- gsub("\\.", " ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("time ", "Average grouped by activity and subject over time domain ",   df[,c("Desc")])  
+    df[,c("Desc")]  <- gsub("frequency ", "Average grouped by activity and subject over frequency domain ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("body", "body component ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("gravity", " gravity component ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("acceleration ", "acceleration signal ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("velocity ", "velocity signal ",   df[,c("Desc")])
+    
+    df[,c("Desc")]  <- gsub("mean ", "mean of 2.56 sec window ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub("std ", "standard deviation of 2.56 sec window ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub(" x ", " on X-axis ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub(" y ", " on Y-axis ",   df[,c("Desc")])
+    df[,c("Desc")]  <- gsub(" z ", " on Z-axis ",   df[,c("Desc")])
+    
+    df[,c("Desc")]  <- gsub(" signal jerk ", " jerk signal ",   df[,c("Desc")])
+    
+    df[,c("Desc")]  <- gsub("(^.* domain)*( .* component)+(.* signal)+(.*$)+", "\\1\\3\\2\\4", df[,c("Desc")])    
+    df[,c("Desc")]  <- gsub(" avg$", "",   df[,c("Desc")])
+    
+    df[,c("Desc")]  <- gsub("  ", " ",   df[,c("Desc")])
+    
+    df <- df[feature.columns,];    
+  
+    rownames(df) <- NULL 
+    
+    #paste()
+    
+
+    df[nrow(df)+1,] <- c("activity", 
+      sprintf("Activity performed by subject, one of '%s'", 
+            paste(activity.labels[,2], collapse="','") ))
+                         
+    df[nrow(df)+1,] <- c("subject", "Subject performing activity, 1 - 30")
+
+    df[,3] <- df[,2]
+    df[,2] <- df[,1]
+    df[,1] <- 1:nrow(df);
+    colnames(df) <- c("No.", "Name", "Description");
+    
+    if (is.null(filename)) {
+      return(df);
+    } else {
+      if (file.exists(filename)) {
+        stop(sprint("File '%s' already exists", filename));
+        return(FALSE);
+      }
+      library(knitr);
+      
+      TFile <- file(filename, "w+")
+      writeLines( kable(df, format="markdown"), TFile);
+      close(TFile);
+    }
+  }
+  
   
   #===========================================================================
   # Function sets up environment
   #===========================================================================
-  init <- function() {
-  
+  init <- function() {    
+    
     # environment
     pe <- parent.frame();
     
+    # check for initialization variable existance
+    if (!exists("initialized",envir = pe, mode = "numeric" )) pe$initialized <- FALSE;
+    
+    if (pe$initialized == TRUE) return(TRUE);
+    
+        
     # test for input files
     testRawData(path);
   
@@ -91,14 +161,19 @@ runAnalysis <- function(path = ".") {
     filename <- paste(path, "activity_labels.txt", sep = "/");
     pe$activity.labels <- read.table(file=filename, 
                               header=FALSE, sep=" ", stringsAsFactors = FALSE);   
+    
+    pe$initialized <- TRUE;
+    return(TRUE);
+    
   }
+      
   
   #===========================================================================
   # Function to read content data. 
   # Function already extracts required columns
   # Use LaF if existing, read.table otherwise  
   #===========================================================================
-  readMeasures <- function(path) {
+  readMeasures <- function(path) {    
     if (has.laf) {
       n <- nrow(features);
       ct <- rep("double", n); 
@@ -151,40 +226,65 @@ runAnalysis <- function(path = ".") {
   # Function creates tidy dataset required 
   # That is, calculates average of all measured values for
   # each combination of subject and activity
+  #===========================================================================  
+  
+  tidyDataSet <- function(filename = NULL) {
+  
+    train.data <- loadDataSet("train")
+    test.data <- loadDataSet("test")
+    
+    merged.data <- rbind(train.data, test.data)    
+    
+    # cleanup
+    rm(train.data);
+    rm(test.data);
+    
+    #factors for splitting
+    factors <- factor(paste(merged.data$activity, merged.data$subject, sep=""))
+    
+    # split data
+    split.data <- split(merged.data, factors);
+    
+    # calculate means
+    tidy.data <- ldply(lapply(split.data, function(x) { 
+        r <- colMeans(subset(x, select = -c(activity, subject))); 
+        # 
+        r <- as.data.frame(t(sapply(r, function(y) { y })));
+        r$activity <- x$activity[1];
+        r$subject <- x$subject[1];
+        r;
+        }));
+    
+    # remove id column added by ldply
+    tidy.data$.id <- NULL
+    
+    if (!missing(filename) && !is.null(filename)) {
+      
+      if (file.exists(filename)) {
+         stop(sprintf("File with name '%s' already exist."), filename)         
+      }
+      
+      write.table(tidy.data, filename)
+      return(TRUE)
+    } 
+    tidy.data      
+  }  
+ 
+  #===========================================================================
+  # main function execution 
   #===========================================================================
   init();
-  
-  train.data <- loadDataSet("train")
-  test.data <- loadDataSet("test")
-  
-  merged.data <- rbind(train.data, test.data)
+ 
   
   
-  # cleanup
-  rm(train.data);
-  rm(test.data);
+ 
   
-  #factors for splitting
-  factors <- factor(paste(merged.data$activity, merged.data$subject, sep=""))
-  
-  # split data
-  split.data <- split(merged.data, factors);
-  
-  # calculate means
-  tidy.data <- ldply(lapply(split.data, function(x) { 
-      r <- colMeans(subset(x, select = -c(activity, subject))); 
-      # 
-      r <- as.data.frame(t(sapply(r, function(y) { y })));
-      r$activity <- x$activity[1];
-      r$subject <- x$subject[1];
-      r;
-      }));
-  
-  tidy.data$.id <- NULL
-  
-  tidy.data
+  if (operation == "codebook") {      
+    writeCodeBook(outputfile)
+  } else {
+    tidyDataSet(outputfile)
+  }
   
     
-  #merged.data
-   
+  
 }
