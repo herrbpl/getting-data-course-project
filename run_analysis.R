@@ -100,9 +100,12 @@ runAnalysis <- function(path = ".", operation="", outputfile=NULL) {
                          
     df[nrow(df)+1,] <- c("subject", "Subject performing activity, 1 - 30")
 
+    # reorder columns
     df[,3] <- df[,2]
     df[,2] <- df[,1]
     df[,1] <- 1:nrow(df);
+    
+    # assign column names
     colnames(df) <- c("No.", "Name", "Description");
     
     if (is.null(filename)) {
@@ -285,6 +288,6 @@ runAnalysis <- function(path = ".", operation="", outputfile=NULL) {
     tidyDataSet(outputfile)
   }
   
-    
-  
 }
+
+runAnalysis(".", "", "tidy.txt")

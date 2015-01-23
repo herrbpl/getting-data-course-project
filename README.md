@@ -22,10 +22,73 @@ Script does for given raw dataset
 
 ## Folder structure and requirements
 
+Expected files in raw data set are:
+
+```
+
+ctivity_labels.txt
+features.txt
+features_info.txt
+README.txt
+test
+train
+test\Inertial Signals
+test\subject_test.txt
+test\X_test.txt
+test\y_test.txt
+test\Inertial Signals\body_acc_x_test.txt
+test\Inertial Signals\body_acc_y_test.txt
+test\Inertial Signals\body_acc_z_test.txt
+test\Inertial Signals\body_gyro_x_test.txt
+test\Inertial Signals\body_gyro_y_test.txt
+test\Inertial Signals\body_gyro_z_test.txt
+test\Inertial Signals\total_acc_x_test.txt
+test\Inertial Signals\total_acc_y_test.txt
+test\Inertial Signals\total_acc_z_test.txt
+train\Inertial Signals
+train\subject_train.txt
+train\X_train.txt
+train\y_train.txt
+train\Inertial Signals\body_acc_x_train.txt
+train\Inertial Signals\body_acc_y_train.txt
+train\Inertial Signals\body_acc_z_train.txt
+train\Inertial Signals\body_gyro_x_train.txt
+train\Inertial Signals\body_gyro_y_train.txt
+train\Inertial Signals\body_gyro_z_train.txt
+train\Inertial Signals\total_acc_x_train.txt
+train\Inertial Signals\total_acc_y_train.txt
+train\Inertial Signals\total_acc_z_train.txt
+
+```
+## Running run_analysis.R script
+
+Place run_analysis.R in same directory which contains test and train folders
+as subfolders.
+
+Set working directory to folder where you placed run_analysis.R and run
+script. Script will generate file "tidy.txt" to same folder where run_analysis.R
+is located. If file already exists or any of required input files is missing,
+error message will be displayed and script stopped.
+
+Script will also define function runAnalysis which can be run later with 
+different parameters.
+
+Parameters are:
+
+* path - path, where function looks for raw data files (default ".")
+* operation - either empty for tidy data set generation or "codebook" for 
+  codebook generation (default "")
+* outputfile - indicating where to save output (default NULL). If outputfile is
+  NULL then data is returned instead of writing to file
+
+
+
+
 ### Libraries required
 
 1. LaF
 2. plyr
+3. knitr (optional)
 
 ## Technical information
 
